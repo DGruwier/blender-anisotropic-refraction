@@ -82,6 +82,7 @@ if(WITH_CYCLES_CUDA_BINARIES AND WITH_CYCLES_DEVICE_OPTIX)
         ${cuda_nvcc_executable}
         --ptx
         -arch=${arch}
+        ${CUDA_NVCC_FLAGS}
         ${cuda_flags}
         ${input}
       WORKING_DIRECTORY
