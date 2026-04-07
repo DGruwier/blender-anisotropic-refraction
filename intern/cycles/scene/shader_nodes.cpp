@@ -2432,9 +2432,13 @@ void GlassBsdfNode::compile(SVMCompiler &compiler)
       .color = compiler.input_float3("Color"),
       .roughness = compiler.input_float("Roughness"),
       .ior = compiler.input_float("IOR"),
+      .anisotropy = SVMInputFloat{},
+      .rotation = SVMInputFloat{},
       .thin_film_thickness = compiler.input_float("Thin Film Thickness"),
       .thin_film_ior = compiler.input_float("Thin Film IOR"),
       .normal_offset = compiler.input_link("Normal"),
+      .tangent_offset = SVM_STACK_INVALID,
+      .primary_camera_only = 0,
   });
 }
 
@@ -2442,6 +2446,94 @@ void GlassBsdfNode::compile(OSLCompiler &compiler)
 {
   compiler.parameter(this, "distribution");
   compiler.add(this, "node_glass_bsdf");
+}
+
+/* Anisotropic Glass BSDF Closure */
+
+NODE_DEFINE(AnisotropicGlassBsdfNode)
+{
+  NodeType *type = NodeType::add("anisotropic_glass_bsdf", create, NodeType::SHADER);
+
+  SOCKET_IN_COLOR(color, "Color", make_float3(0.8f, 0.8f, 0.8f));
+  SOCKET_IN_NORMAL(normal, "Normal", zero_float3(), SocketType::LINK_NORMAL);
+  SOCKET_IN_FLOAT(surface_mix_weight, "SurfaceMixWeight", 0.0f, SocketType::SVM_INTERNAL);
+
+  static NodeEnum distribution_enum;
+  distribution_enum.insert("beckmann", CLOSURE_BSDF_MICROFACET_BECKMANN_GLASS_ID);
+  distribution_enum.insert("ggx", CLOSURE_BSDF_MICROFACET_GGX_GLASS_ID);
+  SOCKET_ENUM(
+      distribution, "Distribution", distribution_enum, CLOSURE_BSDF_MICROFACET_GGX_GLASS_ID);
+
+  SOCKET_IN_VECTOR(tangent, "Tangent", zero_float3(), SocketType::LINK_TANGENT);
+
+  SOCKET_IN_FLOAT(roughness, "Roughness", 0.0f);
+  SOCKET_IN_FLOAT(IOR, "IOR", 1.45f);
+  SOCKET_IN_FLOAT(anisotropy, "Anisotropy", 0.0f);
+  SOCKET_IN_FLOAT(rotation, "Rotation", 0.0f);
+
+  SOCKET_IN_FLOAT(thin_film_thickness, "Thin Film Thickness", 0.0f);
+  SOCKET_IN_FLOAT(thin_film_ior, "Thin Film IOR", 1.33f);
+
+  SOCKET_BOOLEAN(primary_camera_only, "primary_camera_only", true);
+
+  SOCKET_OUT_CLOSURE(BSDF, "BSDF");
+
+  return type;
+}
+
+AnisotropicGlassBsdfNode::AnisotropicGlassBsdfNode() : BsdfNode(get_node_type())
+{
+  closure = CLOSURE_BSDF_MICROFACET_GGX_GLASS_ID;
+}
+
+bool AnisotropicGlassBsdfNode::is_isotropic()
+{
+  ShaderInput *anisotropy_input = input("Anisotropy");
+  return (!anisotropy_input->link && fabsf(anisotropy) <= 1e-4f);
+}
+
+void AnisotropicGlassBsdfNode::attributes(Shader *shader, AttributeRequestSet *attributes)
+{
+  if (shader->has_surface_link()) {
+    ShaderInput *tangent_in = input("Tangent");
+    if (!tangent_in->link && !is_isotropic()) {
+      attributes->add(ATTR_STD_GENERATED);
+    }
+  }
+
+  ShaderNode::attributes(shader, attributes);
+}
+
+void AnisotropicGlassBsdfNode::simplify_settings(Scene * /*scene*/)
+{
+  if (is_isotropic()) {
+    disconnect_unused_input("Tangent");
+  }
+}
+
+void AnisotropicGlassBsdfNode::compile(SVMCompiler &compiler)
+{
+  closure = distribution;
+  BsdfNode::compile(compiler);
+  compiler.add_node_data(SVMNodeGlassBsdfData{
+      .color = compiler.input_float3("Color"),
+      .roughness = compiler.input_float("Roughness"),
+      .ior = compiler.input_float("IOR"),
+      .anisotropy = compiler.input_float("Anisotropy"),
+      .rotation = compiler.input_float("Rotation"),
+      .thin_film_thickness = compiler.input_float("Thin Film Thickness"),
+      .thin_film_ior = compiler.input_float("Thin Film IOR"),
+      .normal_offset = compiler.input_link("Normal"),
+      .tangent_offset = compiler.input_link("Tangent"),
+      .primary_camera_only = uint8_t(primary_camera_only),
+  });
+}
+
+void AnisotropicGlassBsdfNode::compile(OSLCompiler &compiler)
+{
+  compiler.parameter(this, "distribution");
+  compiler.parameter(this, "primary_camera_only");
+  compiler.add(this, "node_anisotropic_glass_bsdf");
 }
 
 /* Refraction BSDF Closure */

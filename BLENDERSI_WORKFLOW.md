@@ -136,15 +136,22 @@ UI check:
 
 Current renderer experiment branch is `anisotropic-refraction`.
 
-Custom placeholder node work is in these areas:
+Current `Anisotropic Glass BSDF` work is in these areas:
 
-- `source/blender/nodes/shader/nodes/node_shader_bsdf_anisotropic_refraction.cc`
-- `source/blender/gpu/shaders/material/gpu_shader_material_anisotropic_refraction.glsl`
+- `source/blender/nodes/shader/nodes/node_shader_bsdf_anisotropic_glass.cc`
+- `source/blender/gpu/shaders/material/gpu_shader_material_anisotropic_glass.glsl`
 - `intern/cycles/blender/shader.cpp`
+- `intern/cycles/scene/shader_nodes.cpp`
+- `intern/cycles/kernel/svm/closure.h`
+- `intern/cycles/kernel/closure/bsdf_microfacet.h`
+- `intern/cycles/kernel/osl/shaders/node_anisotropic_glass_bsdf.osl`
 
-Current placeholder behavior in Cycles:
+Current behavior in Cycles:
 
-- the custom node mixes refraction with green emission using the `Anisotropy` input
+- the custom node is a real `Anisotropic Glass BSDF`
+- anisotropy is shared by the rough dielectric reflection and transmission lobes
+- the `Tangent` input drives anisotropy direction, matching the Glossy workflow
+- `Primary Camera Only` keeps anisotropy on the first camera hit and falls back to isotropic glass on deeper hits
 
 ## If GPU Support Breaks Again
 

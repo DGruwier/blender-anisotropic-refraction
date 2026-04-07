@@ -710,6 +710,35 @@ class GlassBsdfNode : public BsdfNode {
   NODE_SOCKET_API(ClosureType, distribution)
 };
 
+class AnisotropicGlassBsdfNode : public BsdfNode {
+ public:
+  SHADER_NODE_CLASS(AnisotropicGlassBsdfNode)
+
+  void simplify_settings(Scene *scene) override;
+  ClosureType get_closure_type() override
+  {
+    return distribution;
+  }
+
+  NODE_SOCKET_API(float3, tangent)
+  NODE_SOCKET_API(float, roughness)
+  NODE_SOCKET_API(float, IOR)
+  NODE_SOCKET_API(float, anisotropy)
+  NODE_SOCKET_API(float, rotation)
+  NODE_SOCKET_API(float, thin_film_thickness)
+  NODE_SOCKET_API(float, thin_film_ior)
+  NODE_SOCKET_API(ClosureType, distribution)
+  NODE_SOCKET_API(bool, primary_camera_only)
+
+  void attributes(Shader *shader, AttributeRequestSet *attributes) override;
+  bool has_attribute_dependency() override
+  {
+    return true;
+  }
+
+  bool is_isotropic();
+};
+
 class RefractionBsdfNode : public BsdfNode {
  public:
   SHADER_NODE_CLASS(RefractionBsdfNode)

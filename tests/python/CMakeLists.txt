@@ -236,6 +236,11 @@ add_blender_test(
 )
 
 add_blender_test(
+  script_anisotropic_glass_node
+  --python ${CMAKE_CURRENT_LIST_DIR}/bl_anisotropic_glass_node.py
+)
+
+add_blender_test(
   script_bundled_modules
   --python ${CMAKE_CURRENT_LIST_DIR}/bl_bundled_modules.py -- --inside-blender
 )

@@ -1078,10 +1078,14 @@ struct SVMNodeGlassBsdfData {
   SVMInputFloat3 color;
   SVMInputFloat roughness;
   SVMInputFloat ior;
+  SVMInputFloat anisotropy;
+  SVMInputFloat rotation;
   SVMInputFloat thin_film_thickness;
   SVMInputFloat thin_film_ior;
   SVMStackOffset normal_offset;
-  uint8_t _pad[3];
+  SVMStackOffset tangent_offset;
+  uint8_t primary_camera_only;
+  uint8_t _pad[1];
 };
 static_assert(alignof(SVMNodeGlassBsdfData) <= alignof(uint));
 static_assert(sizeof(SVMNodeGlassBsdfData) % sizeof(uint) == 0);

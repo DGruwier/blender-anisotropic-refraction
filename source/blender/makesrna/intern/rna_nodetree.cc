@@ -4368,6 +4368,12 @@ static const EnumPropertyItem node_refraction_items[] = {
     {0, nullptr, 0, nullptr, nullptr},
 };
 
+static const EnumPropertyItem node_anisotropic_glass_items[] = {
+    {SHD_GLOSSY_BECKMANN, "BECKMANN", 0, "Beckmann", ""},
+    {SHD_GLOSSY_GGX, "GGX", 0, "GGX", ""},
+    {0, nullptr, 0, nullptr, nullptr},
+};
+
 static const EnumPropertyItem node_sheen_items[] = {
     {SHD_SHEEN_ASHIKHMIN, "ASHIKHMIN", 0, "Ashikhmin", "Classic Ashikhmin velvet (legacy model)"},
     {SHD_SHEEN_MICROFIBER,
@@ -5955,6 +5961,26 @@ static void def_glass(BlenderRNA * /*brna*/, StructRNA *srna)
   RNA_def_property_enum_sdna(prop, nullptr, "custom1");
   RNA_def_property_enum_items(prop, node_glass_items);
   RNA_def_property_ui_text(prop, "Distribution", "Light scattering distribution on rough surface");
+  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_update");
+}
+
+static void def_anisotropic_glass(BlenderRNA * /*brna*/, StructRNA *srna)
+{
+  PropertyRNA *prop;
+
+  prop = RNA_def_property(srna, "distribution", PROP_ENUM, PROP_NONE);
+  RNA_def_property_enum_sdna(prop, nullptr, "custom1");
+  RNA_def_property_enum_items(prop, node_anisotropic_glass_items);
+  RNA_def_property_ui_text(prop, "Distribution", "Light scattering distribution on rough surface");
+  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_update");
+
+  prop = RNA_def_property(srna, "primary_camera_only", PROP_BOOLEAN, PROP_NONE);
+  RNA_def_property_boolean_sdna(prop, nullptr, "custom2", 1);
+  RNA_def_property_ui_text(
+      prop,
+      "Primary Camera Only",
+      "Only apply anisotropic transmission on the first camera-facing surface hit, and use "
+      "isotropic glass for deeper transmission events");
   RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_update");
 }
 
@@ -10079,7 +10105,7 @@ static void rna_def_nodes(BlenderRNA *brna)
   define("ShaderNode", "ShaderNodeBlackbody");
   define("ShaderNode", "ShaderNodeBrightContrast");
   define("ShaderNode", "ShaderNodeBsdfAnisotropic", def_glossy);
-  define("ShaderNode", "ShaderNodeBsdfAnisotropicRefraction", def_refraction);
+  define("ShaderNode", "ShaderNodeBsdfAnisotropicGlass", def_anisotropic_glass);
   define("ShaderNode", "ShaderNodeBsdfDiffuse");
   define("ShaderNode", "ShaderNodeBsdfGlass", def_glass);
   define("ShaderNode", "ShaderNodeBsdfHair", def_hair);

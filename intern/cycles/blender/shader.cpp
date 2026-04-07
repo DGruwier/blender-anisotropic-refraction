@@ -611,6 +611,20 @@ static ShaderNode *add_node(Scene *scene,
     }
     node = glass;
   }
+  else if (b_node.is_type("ShaderNodeBsdfAnisotropicGlass"_ustr)) {
+    AnisotropicGlassBsdfNode *glass = graph->create_node<AnisotropicGlassBsdfNode>();
+    switch (b_node.custom1) {
+      case blender::SHD_GLOSSY_BECKMANN:
+        glass->set_distribution(CLOSURE_BSDF_MICROFACET_BECKMANN_GLASS_ID);
+        break;
+      case blender::SHD_GLOSSY_GGX:
+      default:
+        glass->set_distribution(CLOSURE_BSDF_MICROFACET_GGX_GLASS_ID);
+        break;
+    }
+    glass->set_primary_camera_only(b_node.custom2 != 0);
+    node = glass;
+  }
   else if (b_node.is_type("ShaderNodeBsdfRefraction"_ustr)) {
     RefractionBsdfNode *refraction = graph->create_node<RefractionBsdfNode>();
     switch (b_node.custom1) {
@@ -1128,85 +1142,6 @@ static ShaderNode *add_node(Scene *scene,
   return node;
 }
 
-static void add_anisotropic_refraction_placeholder_node(blender::Main &b_data,
-                                                        blender::bNodeTree &b_ntree,
-                                                        ShaderGraph *graph,
-                                                        blender::bNode &b_node,
-                                                        PtrInputMap &input_map,
-                                                        PtrOutputMap &output_map)
-{
-  RefractionBsdfNode *refraction = graph->create_node<RefractionBsdfNode>();
-  switch (b_node.custom1) {
-    case blender::SHD_GLOSSY_BECKMANN:
-      refraction->set_distribution(CLOSURE_BSDF_MICROFACET_BECKMANN_REFRACTION_ID);
-      break;
-    case blender::SHD_GLOSSY_GGX:
-    default:
-      refraction->set_distribution(CLOSURE_BSDF_MICROFACET_GGX_REFRACTION_ID);
-      break;
-  }
-
-  EmissionNode *emission = graph->create_node<EmissionNode>();
-  emission->set_color(make_float3(0.0f, 1.0f, 0.0f));
-  emission->set_strength(1.0f);
-
-  MixClosureNode *mix = graph->create_node<MixClosureNode>();
-  graph->connect(refraction->output("BSDF"), mix->input("Closure1"));
-  graph->connect(emission->output("Emission"), mix->input("Closure2"));
-
-  for (blender::bNodeSocket *b_input : b_node.input_sockets()) {
-    if (!b_input->is_available()) {
-      continue;
-    }
-
-    const string socket_name = b_input->name;
-    if (socket_name == "Color") {
-      ShaderInput *input = refraction->input("Color");
-      input_map.emplace(b_input, input);
-      set_default_value(input, *b_input, b_data, b_ntree.id);
-    }
-    else if (socket_name == "Roughness") {
-      ShaderInput *input = refraction->input("Roughness");
-      input_map.emplace(b_input, input);
-      set_default_value(input, *b_input, b_data, b_ntree.id);
-    }
-    else if (socket_name == "IOR") {
-      ShaderInput *input = refraction->input("IOR");
-      input_map.emplace(b_input, input);
-      set_default_value(input, *b_input, b_data, b_ntree.id);
-    }
-    else if (socket_name == "Anisotropy") {
-      ShaderInput *input = mix->input("Fac");
-      input_map.emplace(b_input, input);
-      set_default_value(input, *b_input, b_data, b_ntree.id);
-    }
-    else if (socket_name == "Normal") {
-      ShaderInput *input = refraction->input("Normal");
-      input_map.emplace(b_input, input);
-      set_default_value(input, *b_input, b_data, b_ntree.id);
-    }
-    else if (socket_name == "Weight") {
-      ShaderInput *refraction_weight = refraction->input("SurfaceMixWeight");
-      input_map.emplace(b_input, refraction_weight);
-      set_default_value(refraction_weight, *b_input, b_data, b_ntree.id);
-
-      ShaderInput *emission_weight = emission->input("SurfaceMixWeight");
-      input_map.emplace(b_input, emission_weight);
-      set_default_value(emission_weight, *b_input, b_data, b_ntree.id);
-    }
-  }
-
-  for (blender::bNodeSocket *b_output : b_node.output_sockets()) {
-    if (!b_output->is_available()) {
-      continue;
-    }
-
-    if (string(b_output->name) == "BSDF") {
-      output_map[b_output] = mix->output("Closure");
-    }
-  }
-}
-
 static bool node_use_modified_socket_name(ShaderNode *node)
 {
   if (node->special_type == SHADER_SPECIAL_TYPE_OSL) {
@@ -1450,10 +1385,6 @@ static void add_nodes_inlined(Scene *scene,
           }
         }
       }
-    }
-    else if (b_node->is_type("ShaderNodeBsdfAnisotropicRefraction")) {
-      add_anisotropic_refraction_placeholder_node(
-          b_data, b_ntree, graph, *b_node, input_map, output_map);
     }
     /* TODO: All the previous cases can be removed? */
     else {

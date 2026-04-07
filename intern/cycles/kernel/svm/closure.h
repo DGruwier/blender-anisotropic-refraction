@@ -753,12 +753,8 @@ ccl_device
       const bool reflective_caustics = true;
       const bool refractive_caustics = true;
 #endif
-
       float3 N = stack_load_float3_default(stack, bsdf_data.normal_offset, sd->N);
       N = safe_normalize_fallback(N, sd->N);
-
-      const float thinfilm_thickness = stack_load(stack, bsdf_data.thin_film_thickness);
-      const float thinfilm_ior = fmaxf(stack_load(stack, bsdf_data.thin_film_ior), 1e-5f);
 
       ccl_private MicrofacetBsdf *bsdf = (ccl_private MicrofacetBsdf *)bsdf_alloc(
           sd, sizeof(MicrofacetBsdf), make_spectrum(mix_weight));
@@ -769,11 +765,38 @@ ccl_device
 
       if (bsdf && fresnel) {
         bsdf->N = maybe_ensure_valid_specular_reflection(sd, N);
-        bsdf->T = zero_float3();
-
         const float ior = fmaxf(stack_load(stack, bsdf_data.ior), 1e-5f);
+        const float roughness = sqr(saturatef(stack_load(stack, bsdf_data.roughness)));
+        float anisotropy = clamp(stack_load(stack, bsdf_data.anisotropy), -0.99f, 0.99f);
+
+        if (bsdf_data.primary_camera_only != 0 && !(path_flag & PATH_RAY_CAMERA)) {
+          anisotropy = 0.0f;
+        }
+
         bsdf->ior = (sd->flag & SD_BACKFACING) ? 1.0f / ior : ior;
-        bsdf->alpha_x = bsdf->alpha_y = sqr(saturatef(stack_load(stack, bsdf_data.roughness)));
+
+        if (!stack_valid(bsdf_data.tangent_offset) || fabsf(anisotropy) <= 1e-4f) {
+          bsdf->T = zero_float3();
+          bsdf->alpha_x = roughness;
+          bsdf->alpha_y = roughness;
+        }
+        else {
+          bsdf->T = stack_load_float3(stack, bsdf_data.tangent_offset);
+
+          const float rotation = stack_load(stack, bsdf_data.rotation);
+          if (rotation != 0.0f) {
+            bsdf->T = rotate_around_axis(bsdf->T, bsdf->N, rotation * M_2PI_F);
+          }
+
+          if (anisotropy < 0.0f) {
+            bsdf->alpha_x = roughness / (1.0f + anisotropy);
+            bsdf->alpha_y = roughness * (1.0f + anisotropy);
+          }
+          else {
+            bsdf->alpha_x = roughness * (1.0f - anisotropy);
+            bsdf->alpha_y = roughness / (1.0f - anisotropy);
+          }
+        }
 
         fresnel->f0 = make_float3(F0_from_ior(ior));
         fresnel->f90 = one_spectrum();
@@ -782,6 +805,8 @@ ccl_device
         fresnel->reflection_tint = reflective_caustics ? rgb_to_spectrum(color) : zero_spectrum();
         fresnel->transmission_tint = refractive_caustics ? rgb_to_spectrum(color) :
                                                            zero_spectrum();
+        const float thinfilm_thickness = stack_load(stack, bsdf_data.thin_film_thickness);
+        const float thinfilm_ior = fmaxf(stack_load(stack, bsdf_data.thin_film_ior), 1e-5f);
         fresnel->thin_film.thickness = thinfilm_thickness;
         fresnel->thin_film.ior = (sd->flag & SD_BACKFACING) ? thinfilm_ior / ior : thinfilm_ior;
         /* setup bsdf */
