@@ -56,7 +56,7 @@ static void node_shader_buts_anisotropic_glass(
     ui::Layout &layout, bContext * /*C*/, PointerRNA *ptr)
 {
   layout.prop(ptr, "distribution", ui::ITEM_R_SPLIT_EMPTY_NAME, "", ICON_NONE);
-  layout.prop(ptr, "primary_camera_only", ui::ITEM_R_SPLIT_EMPTY_NAME, "", ICON_NONE);
+  layout.prop(ptr, "primary_camera_only", ui::ITEM_R_SPLIT_EMPTY_NAME, std::nullopt, ICON_NONE);
 }
 
 static void node_shader_init_anisotropic_glass(bNodeTree * /*ntree*/, bNode *node)
