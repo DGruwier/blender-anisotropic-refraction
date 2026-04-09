@@ -9,11 +9,11 @@ Blender Anisotropic Refraction
 
 This is a personal fork of [Blender](https://projects.blender.org/blender/blender) for anisotropic refraction work in Cycles.
 
-When built, the shader work in this fork appears as `Anisotropic Glass BSDF`.
+When built, the shader work in this fork appears as a new `Anisotropic Glass BSDF` material.
 
-Upstream Blender is maintained by the Blender project. This repository only exists for my own experimentation. 
+Upstream Blender is maintained by the Blender project. The original GitHub mirror is [github.com/blender/blender](https://github.com/blender/blender), and the original repository has build instructions and general project information.
 
-This is an entirely vibe code based fork, please do not reference it as anything but a proof of concept.
+This repository only exists for my own vibe code based experimentation. Please do not reference it as anything but a proof of concept.
 
 License
 -------
