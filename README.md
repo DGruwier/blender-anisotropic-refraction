@@ -13,7 +13,7 @@ When built, the shader work in this fork appears as a new `Anisotropic Glass BSD
 
 Upstream Blender is maintained by the Blender project. The original GitHub mirror is [github.com/blender/blender](https://github.com/blender/blender), and the original repository has build instructions and general project information.
 
-This repository only exists for my own vibe code based experimentation. Please do not reference it as anything but a proof of concept.
+This repository only exists for my own vibe code based experimentation. Please do not reference it as anything but a proof of concept. I can provide no support or assistance with this repo.
 
 License
 -------
