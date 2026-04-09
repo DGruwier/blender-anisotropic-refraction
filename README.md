@@ -7,7 +7,7 @@ See 'release/text/readme.html' for the end user read-me.
 Blender Anisotropic Refraction
 ==============================
 
-This is a personal fork of [Blender](https://projects.blender.org/blender/blender) for anisotropic refraction work in Cycles.
+This is a personal fork of [Blender](https://projects.blender.org/blender/blender) for anisotropy shader experimentation in Cycles.
 
 When built, the shader work in this fork appears as a new `Anisotropic Glass BSDF` material.
 
